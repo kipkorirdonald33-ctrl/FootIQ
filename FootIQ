@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FootIQ - Football AI</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #1a73e8; }
+        button { padding: 10px 20px; margin: 5px 0; cursor: pointer; }
+        #matches p, #answer { margin: 5px 0; padding: 5px; border-bottom: 1px solid #ddd; }
+        input[type=text] { padding: 10px; width: 70%; }
+    </style>
+</head>
+<body>
+    <h1>FootIQ</h1>
+    <p>Ask anything about football or see live matches!</p>
+
+    <input type="text" id="question" placeholder="Ask a football question...">
+    <button onclick="askFootIQ()">Ask</button>
+
+    <h2>Answer:</h2>
+    <div id="answer"></div>
+
+    <h2>Live Matches:</h2>
+    <button onclick="getLiveMatches()">Show Today’s Matches</button>
+    <div id="matches"></div>
+
+    <script>
+        // --- LIVE FOOTBALL API ---
+        const apiKey = '13cff3bea50292fa9bc7c13f7ad024aa';
+        const leagueId = 39; // Premier League example
+        const season = 2025;
+
+        async function getLiveMatches() {
+            const url = `https://v3.football.api-sports.io/fixtures?season=${season}&league=${leagueId}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'x-apisports-key': apiKey
+                    }
+                });
+
+                const data = await response.json();
+                const matchesDiv = document.getElementById('matches');
+                matchesDiv.innerHTML = '';
+
+                if (!data.response || data.response.length === 0) {
+                    matchesDiv.innerText = "No matches found today.";
+                    return;
+                }
+
+                data.response.forEach(fixture => {
+                    const match = document.createElement('p');
+                    match.innerText = `${fixture.teams.home.name} vs ${fixture.teams.away.name} - ${new Date(fixture.fixture.date).toLocaleString()}`;
+                    matchesDiv.appendChild(match);
+                });
+            } catch (error) {
+                console.error(error);
+                document.getElementById('matches').innerText = "Error fetching live matches.";
+            }
+        }
+
+        // --- FOOTBALL MINI AI (Hugging Face) ---
+        async function askFootIQ() {
+            const question = document.getElementById('question').value;
+            const answerDiv = document.getElementById('answer');
+            answerDiv.innerText = "Thinking...";
+
+            // Free Hugging Face model example
+            const hfApiUrl = 'https://api-inference.huggingface.co/models/gpt2';
+            const hfApiKey = 'YOUR_HUGGING_FACE_KEY'; // Replace with your free Hugging Face key
+
+            try {
+                const response = await fetch(hfApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${hfApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ inputs: question })
+                });
+
+                const result = await response.json();
+                if (result && result[0] && result[0].generated_text) {
+                    answerDiv.innerText = result[0].generated_text;
+                } else {
+                    answerDiv.innerText = "Sorry, I cannot answer that now.";
+                }
+            } catch (error) {
+                console.error(error);
+                answerDiv.innerText = "Error fetching answer. Try again later.";
+            }
+        }
+    </script>
+</body>
+</html>
